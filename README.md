@@ -46,6 +46,7 @@ It was implemented as part of a coding test to demonstrate full-stack developmen
 * [ ] Activity log rendered as a timeline.
 * [ ] Role management (promote/demote).
 * [ ] Basic rate limiting.
+* [ ] Dockerfile for one-command local run.
 
 ---
 
