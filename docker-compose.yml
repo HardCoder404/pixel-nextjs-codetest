@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  work-orders-app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/prisma/dev.db
+    volumes:
+      - .:/app
+      - /app/node_modules
