@@ -7,11 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Add these enums at the top
+enum Role {
+  USER
+  MANAGER
+}
+
+enum Priority {
+  LOW
+  MED
+  HIGH
+}
+
+enum Status {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id             String   @id @default(cuid())
   name           String?
   email          String   @unique
-  role           String   @default("USER")
+  role           Role     @default(USER)  // Changed from String to Role enum
   hashedPassword String
   createdAt      DateTime @default(now())
   ordersCreated  WorkOrder[] @relation("OrdersCreated")
@@ -22,13 +41,21 @@ model WorkOrder {
   id           String   @id @default(cuid())
   title        String
   description  String
-  priority     String   @default("MED")
-  status       String   @default("OPEN")
+  priority     Priority @default(MED)    // Changed from String to Priority enum
+  status       Status   @default(OPEN)   // Changed from String to Status enum
   createdById  String
   assignedToId String?
+  imageUrl     String?
+  imageName    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   createdBy  User @relation("OrdersCreated", fields: [createdById], references: [id])
   assignedTo User? @relation("OrdersAssigned", fields: [assignedToId], references: [id])
+
+  @@index([createdById])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
 }

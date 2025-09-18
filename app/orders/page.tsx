@@ -1,43 +1,70 @@
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import Link from "next/link";
+import { getServerSession } from "@/lib/auth";
+import { getOrders } from "@/lib/actions/orders";
+import { searchFiltersSchema } from "@/lib/validations";
+import { OrdersTable } from "@/components/orders/orders-table";
+import { OrdersFilters } from "@/components/orders/orders-filters";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import { OrdersPagination } from "@/components/orders/orders-pagination";
 
-export default async function OrdersPage() {
-  const session = await getServerSession(authOptions);
+interface PageProps {
+  searchParams: {
+    search?: string;
+    status?: string;
+    priority?: string;
+    page?: string;
+  };
+}
+
+export default async function OrdersPage({ searchParams }: PageProps) {
+  const session = await getServerSession();
+
   if (!session?.user) {
     return (
-      <div className="card">
-        <h1 className="text-xl font-semibold">Not signed in</h1>
-        <p className="mt-2">Please <Link className="underline" href="/login">sign in</Link>.</p>
-      </div>
+      <Card>
+        <CardContent className="text-center py-8">
+          <h1 className="text-xl font-semibold">Not signed in</h1>
+          <p className="mt-2">
+            Please{" "}
+            <Link href="/login" className="underline">
+              sign in
+            </Link>
+            .
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
-  const where: any = session.user.role === "USER" ? { createdById: session.user.id } : {};
-  const orders = await prisma.workOrder.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: { createdBy: true, assignedTo: true }
-  });
+  const filters = searchFiltersSchema.parse(searchParams);
+  console.log("FILTERS: ",filters);
+  
+  const data = await getOrders(filters);
+  console.log("SESSION BHAI: ",session);
+  
 
   return (
-    <div className="card">
-      <h1 className="text-xl font-semibold mb-3">Orders</h1>
-      {orders.length === 0 && <p className="text-sm text-zinc-500">No orders yet.</p>}
-      <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-        {orders.map(o => (
-          <div key={o.id} className="py-3 flex items-center justify-between">
-            <div>
-              <div className="font-medium">{o.title}</div>
-              <div className="text-xs text-zinc-500">Created by {o.createdBy?.email} · Assigned to {o.assignedTo?.email ?? "—"}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="badge">{o.status.toLowerCase()}</span>
-              <span className="badge">{o.priority.toLowerCase()}</span>
-            </div>
-          </div>
-        ))}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Work Orders</h1>
+        <Button asChild>
+          <Link href="/orders/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Order
+          </Link>
+        </Button>
+      </div>
+
+      <OrdersFilters />
+
+      <OrdersTable orders={data.orders} userRole={session.user.role} />
+      <div className="flex justify-end">
+        <OrdersPagination
+          currentPage={data.currentPage}
+          totalPages={data.totalPages}
+        />
       </div>
     </div>
   );
